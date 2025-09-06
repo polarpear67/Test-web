@@ -1,11 +1,335 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>New </title>
-</head>
-<body>
-    <div><h1>Hello</h1></div>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Linear Regression</title>
+    <meta content="text/html; charset=utf-8" http-equiv="Content-Type" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/jsxgraph/distrib/jsxgraph.css"
+      rel="stylesheet"
+      type="text/css"
+    />
+    <script
+      src="https://cdn.jsdelivr.net/npm/jsxgraph/distrib/jsxgraphcore.js"
+      type="text/javascript"
+      charset="UTF-8"
+    ></script>
+
+    <!-- The next line is optional: load MathJax -->
+    <script
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"
+      id="MathJax-script"
+      async
+    ></script>
+    
+  </head>
+  <!-- Made by polarpear-->
+  <body
+    style="
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px;
+      height: 95vh;
+      font-family: Arial;
+    "
+  >
+    <div
+      class="left-bar"
+      style="
+        width: 18vw;
+        height: 88vh;
+        border: 1px solid black;
+        border-radius: 20px;
+        padding: 20px;
+        margin: 10px;
+      "
+    >
+      <div style="display: flex; flex-direction: column; align-items: center">
+        <div style="text-align: center; font-size: 22px">Linear Regression</div>
+        <div style="display: inline; margin: 0; font-size: 16px">
+          by polarpear
+        </div>
+      </div>
+      <hr />
+      <div
+        id="input-box"
+        class="input-box"
+        style="
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          margin-top: 20px;
+          margin-bottom: 10px;
+        "
+      >
+        <div>
+          x:<input
+            type="text"
+            id="x-cord"
+            style="width: 20%; margin-left: 5px; margin-right: 5px"
+          />
+          y:
+          <input
+            type="text"
+            id="y-cord"
+            style="width: 20%; margin-left: 5px; margin-right: 5px"
+          />
+          <input type="submit" id="add-cord" value="add" />
+        </div>
+      </div>
+      <div>
+        <div>
+          x-axis:
+          <input type="text" id="x-axis" style="width: 50%; margin-left: 5px; margin-bottom: 5px;" />
+        </div>
+        <div>
+          y-axis:<input
+            type="text"
+            id="y-axis"
+            style="width: 50%; margin-left: 5px; margin-bottom: 10px;"
+          />
+        </div>
+      </div>
+      <hr />
+      <div>
+        Coordinates 
+        <div
+          id="cord-display"
+          style=" overflow: auto; height: 43vh; margin: 10px"
+        ></div>
+        <hr>
+        <div >
+          Equation (Estimated)
+          <div id="equation" style="margin-top: 10px;text-align: center;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="graph"
+      style="
+        display: flex;
+        width: 65vw;
+        height: 88vh;
+        border: 1px solid black;
+        border-radius: 20px;
+        padding: 20px;
+        justify-content: center;
+        align-items: center;
+        margin: 10px;
+      "
+    >
+      <div id="jxgbox" class="jxgbox" style="width: 96%; height: 96%"></div>
+      
+    </div>
+    <div style="
+        width: 15vw;
+        height: 88vh;
+        border: 1px solid black;
+        border-radius: 20px;
+        padding: 20px;
+        justify-content: center;
+        align-items: center;
+        margin: 10px;
+      ">
+      
+      <div style="text-align: center; font-size: 24px;">
+        Settings
+      </div>
+      <hr>
+      <div style="font-size: 20px; font-weight: 600;margin-top: 20px;">Line</div>
+      <div style="display: flex; margin-top: 10px; font-size: 14px; justify-content: center; align-items: center;">
+        Pass through origin 
+        <input id="origin" type="checkbox" style="margin-left: 10px;">
+      </div>
+    </div>
+
+    <script>
+      let bounding = [-16, 12, 16, -12];
+      let xLabel = "x";
+      let yLabel = "y";
+      var board = JXG.JSXGraph.initBoard("jxgbox", {
+        boundingbox: bounding,
+        grid: { theme: 3 },
+        showCopyright: false,
+      });
+      xAxis = board.create(
+        "axis",
+        [
+          [0, 0],
+          [1, 0],
+        ],
+        {
+          name: xLabel,
+          withLabel: true,
+          label: {
+            position: "rt",
+            offset: [-5, 15],
+            anchorX: "right",
+          },
+          position: "sticky",
+          anchor: "left right",
+          anchorDist: "0.1",
+          ticksAutoPos: true,
+        }
+      );
+
+      yAxis = board.create(
+        "axis",
+        [
+          [0, 0],
+          [0, 1],
+        ],
+        {
+          name: yLabel,
+          withLabel: true,
+          label: {
+            position: "rt",
+            offset: [-15, -5],
+            anchorX: "right",
+          },
+          position: "sticky",
+          anchor: "left right",
+          anchorDist: "0.1",
+          ticksAutoPos: true,
+        }
+      );
+
+      let cord = [];
+      let curve;
+
+      function forwardPropagation(m, c, x) {
+        let predictions = x.map((item) => m * item + c);
+        console.log("forward:", predictions);
+        return predictions;
+      }
+
+      function costFunction(predictions, y) {
+        sum = 0;
+        for (let i = 0; i < predictions.length; i++) {
+          sum += (y[i] - predictions[i]) ** 2;
+        }
+        return sum / predictions.length;
+      }
+
+      function backwardPropagation(x, y, predictions) {
+        let sum_dm = 0;
+        let sum_dc = 0;
+        for (let i = 0; i < predictions.length; i++) {
+          sum_dm += x[i] * (y[i] - predictions[i]);
+          sum_dc += y[i] - predictions[i];
+        }
+
+        let dm = (2 * sum_dm) / predictions.length;
+        let dc = (2 * sum_dc) / predictions.length;
+        console.log("backward:", dm, dc);
+        return [dm, dc];
+      }
+
+      function update(m, c, dm, dc, a) {
+        m = m + a * dm;
+        c = c + a * dc;
+        console.log("update:", m, c);
+        return [m, c];
+      }
+
+      function linearRegression(cord, a) {
+        let x = cord.map((item) => item[0]);
+        let y = cord.map((item) => item[1]);
+        let loss = [];
+        let m = y[0] / x[0];
+        let c = 0;
+
+        for (let i = 0; i < 1000; i++) {
+          let predictions = forwardPropagation(m, c, x);
+          loss.push(costFunction(predictions, y));
+          let [dm, dc] = backwardPropagation(x, y, predictions);
+          [m, c] = update(m, c, dm, dc, a);
+        }
+
+        return [m, c, loss];
+      }
+      function round(num, d) {
+        num = num * 10 ** d;
+        num = Math.round(num);
+        num = num / 10 ** d;
+        return num;
+      }
+
+      const learningRate = 0.001;
+      let originCheck = false;
+      document.getElementById("origin").addEventListener("change", () => {
+        if (document.getElementById("origin").checked) {
+          originCheck = true;
+          console.log("Origin: ",originCheck )
+        } else {
+          originCheck = false;
+          console.log("Origin: ",originCheck )
+        }
+      })
+      document
+        .getElementById("add-cord")
+        .addEventListener("click", async (event) => {
+          const x = Number(document.getElementById("x-cord").value);
+          const y = Number(document.getElementById("y-cord").value);
+          
+          if (x !== NaN || y !== NaN ) {
+            document.getElementById("x-cord").value = "";
+            document.getElementById("y-cord").value = "";
+            cord.push([x, y]);
+            if (x > bounding[2]) {
+              bounding[2] = 5 * (Math.round(x) + 1);
+              board.boundingbox = bounding;
+              board.update();
+            } else if (y > bounding[1]) {
+              bounding[1] = 5 * (Math.round(y) + 1);
+              board.boundingbox = bounding;
+              board.update();
+            }
+            board.create("point", [x, y]);
+
+            
+
+            const newCord = document.createElement("div");
+            newCord.textContent = `(${x},${y})`;
+            newCord.style.margin = 0;
+            newCord.style.marginTop = "5px";
+            newCord.style.padding = 0;
+            newCord.style.marginLeft = "5px";
+
+            document.getElementById("cord-display").appendChild(newCord);
+            [m, c, loss] = await linearRegression(cord, learningRate);
+            if (originCheck || c === 0) {
+              document.getElementById("equation").textContent = `y=${Math.round(m*100)/100}x`;
+            } else if (c < 0) {
+              document.getElementById("equation").textContent = `y=${Math.round(m*100)/100}x-${Math.round(Math.abs(c)*100)/100}`;
+            } else {
+              document.getElementById("equation").textContent = `y=${Math.round(m*100)/100}x+${Math.round(c*100)/100}`;
+            }
+            if (curve) {
+              board.removeObject(curve);
+            }
+            curve = board.create("curve", [
+              (t) => {
+                return t;
+              },
+              (t) => {
+                  if (originCheck) {
+                    return m * t;
+                  } else {
+                    return m * t + c;
+                  }
+              },
+            ]);
+          }
+        });
+      document.getElementById("x-axis").addEventListener("change", (event) => {
+        xAxis.name = document.getElementById("x-axis").value;
+      });
+      document.getElementById("y-axis").addEventListener("change", (event) => {
+        yAxis.name = document.getElementById("y-axis").value;
+      });
+    </script>
+  </body>
 </html>
